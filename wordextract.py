@@ -4,6 +4,8 @@ import os
 import re
 
 import optparse
+import pdfmine
+
 
 FILE_SIZE_LIMIT = 100 * 1024 * 1024
 WORD_SIZE_LIMIT = 20
@@ -37,12 +39,23 @@ def traverse(rootdir):
 
 
 def process_file(file):
-    ext = os.path.splitext(file)
+    root, ext = os.path.splitext(file)
 
     if options.verbose >= 1:
         print "Processing file: " + file
-    process_generic(file)
 
+    if ext.lower() == ".pdf":
+        process_pdf(file)
+    else:
+        process_generic(file)
+
+def process_pdf(file):
+    """
+    Processes PDF files, converting them to text and extracting
+    words.
+    """
+    text = pdfmine.convert_pdf_to_txt(file)
+    process_text(text)
 
 def process_generic(file):
     """
@@ -55,17 +68,25 @@ def process_generic(file):
         return
 
     content = open(file, "r").read()
+    process_text(content)
 
-    if '\0' in content:
+
+def process_text(text):
+    """
+    Processes the specified text.
+    """
+    if '\0' in text:
         if options.verbose >= 1:
             print "[Ignoring file %s: Binary]" % file
         return
 
-    matches = re.findall(r"[a-zA-Z0-9\-\']+", content)
+    matches = re.findall(r"[a-zA-Z0-9\-\']+", text)
     for m in matches:
         if len(m) > WORD_SIZE_LIMIT or len(m) < WORD_SIZE_MIN:
             continue
         words[m] += 1
+
+
 
 
 traverse(options.rootfolder)
