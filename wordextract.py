@@ -14,8 +14,9 @@ WORD_SIZE_MIN = 4
 
 parser = optparse.OptionParser()
 
-parser.add_option("-o", "--output", dest="filename", help="File to write the wordlist to", metavar="FILE", default="wordlist.txt")
-parser.add_option("-v", "--verbose", dest="verbose", default=False, help="Show verbose information")
+parser.add_option("-o", "--output", action="store", dest="filename", help="File to write the wordlist to", metavar="FILE", default="wordlist.txt")
+parser.add_option("-v", "--verbose", action="store", dest="verbose", default=1, help="Show verbose information (0: nothing, 1: file, 2: debug")
+parser.add_option("-f", "--folder", action="store", dest="rootfolder", help="Root folder to start processing recursively")
 
 words = defaultdict(int)
 
@@ -38,7 +39,8 @@ def traverse(rootdir):
 def process_file(file):
     ext = os.path.splitext(file)
 
-    print "Processing file: " + file
+    if options.verbose >= 1:
+        print "Processing file: " + file
     process_generic(file)
 
 
@@ -48,13 +50,15 @@ def process_generic(file):
     """
     size = os.path.getsize(file)
     if size > FILE_SIZE_LIMIT:
-        print "[Ignoring file %s: Too big]" % file
+        if options.verbose >= 1:
+            print "[Ignoring file %s: Too big]" % file
         return
 
     content = open(file, "r").read()
 
     if '\0' in content:
-        print "[Ignoring file %s: Binary]" % file
+        if options.verbose >= 1:
+            print "[Ignoring file %s: Binary]" % file
         return
 
     matches = re.findall(r"[a-zA-Z0-9\-\']+", content)
@@ -64,14 +68,19 @@ def process_generic(file):
         words[m] += 1
 
 
-traverse(rootdir)
-
-print words
+traverse(options.rootfolder)
 
 wordlist = sorted(words, key=lambda k: words[k], reverse=True)
-print wordlist
-print words["Feature"]
 
+
+outfile = open(options.filename, "w")
 
 for w in wordlist:
-    print w + ": " + str(words[w])
+    outfile.write(w + "\n")
+    if options.verbose >= 2:
+        print w + ": " + str(words[w])
+
+print "Wordlist %s generated with %d words" % (options.filename, len(wordlist))
+
+outfile.close()
+
