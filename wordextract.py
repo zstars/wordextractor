@@ -54,8 +54,11 @@ def process_pdf(file):
     Processes PDF files, converting them to text and extracting
     words.
     """
-    text = pdfmine.convert_pdf_to_txt(file)
-    process_text(text)
+    try:
+        text = pdfmine.convert_pdf_to_txt(file)
+        process_text(text)
+    except:
+        print "[Ignoring PDF file %s: Error in the reader]" % file
 
 def process_generic(file):
     """
